@@ -1,0 +1,223 @@
+<adf-toolbar>
+    <adf-toolbar-title>
+        <adf-breadcrumb class="files-breadcrumb" root="Contract Detail">
+        </adf-breadcrumb>
+    </adf-toolbar-title>
+
+    <div class="adf-toolbar--spacer"></div>
+
+    <button mat-raised-button color="accent" class="float-end" (click)="onBack()">
+        <mat-icon>backspace</mat-icon>
+        <span> Back</span>
+    </button>
+</adf-toolbar>
+
+<div class="row m-3" *ngIf="!isLoading;else loadingDiv">
+    <div class="col-md-12">
+        <h2 class="font-weight-bold m-3">{{contract.name}}</h2>
+    </div>
+    <div class="col-md-12">
+        <div class="card m-3">
+            <div class="card-body">
+                <div class="row m-3">
+                    <h4 class="font-weight-bold">Information:</h4>
+                    <mat-divider></mat-divider>
+                </div>
+                <div class="row m-3">
+                    <div class="col-md-4">
+                        Created By: <b>{{contract.createdByUser.displayName}}</b>
+                    </div>
+                    <div class="col-md-4">
+                        Created On: <b>{{contract.createdAt | date: 'mediumDate'}}</b>
+                    </div>
+                    <div class="col-md-4">
+                        Modified By: <b>{{contract.modifiedByUser.displayName}}</b>
+                    </div>
+                </div>
+                <div class="row m-3">
+                    <div class="col-md-4">
+                        Status: <b>{{contract.properties['cw:status']}}</b>
+                    </div>
+                    <div class="col-md-4" *ngIf="contract.properties['cw:status'] == STATUS_APPROVED">
+                        Approval Date: <b>{{contract.properties['cw:approvalAt'] | date: 'mediumDate'}}</b>
+                    </div>
+                    <div class="col-md-4" *ngIf="contract.properties['cw:status'] == STATUS_REVIEW">
+                        Current Workflow Step: <b>{{currentTask.name}} - {{currentTask.assignee ?
+                            (currentTask.assignee.firstName ? currentTask.assignee.firstName : '') + ' ' +
+                            currentTask.assignee.lastName : 'Not Assigned'}}</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card m-3">
+            <div class="card-body">
+                <div class="row m-3">
+                    <div>
+                        <h4 class="d-md-inline-block font-weight-bold mt-1">Files:</h4>
+
+                        <div *ngIf="contract.properties['cw:status'] == STATUS_NEW" class="float-end">
+                            <adf-upload-button class="d-md-inline-block upload-btn" staticTitle="Upload"
+                                [rootFolderId]="contract.id" [multipleFiles]="true" [versioning]="true"
+                                acceptedFilesType=".doc,.docx,.pdf" adf-check-allowable-operation="create"
+                                (success)="onUploadSuccess()">
+                            </adf-upload-button>
+
+                            <button mat-raised-button color="accent" (click)="onDelete()"
+                                [disabled]="!selectedNodeId || !isFileUnlocked(selectedNodeId)">
+                                <mat-icon>delete</mat-icon>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <mat-divider class="mt-2"></mat-divider>
+                </div>
+                <div class="row m-3">
+                    <adf-document-list #documentList [currentFolderId]="contract.id" [multiselect]="false"
+                        [includeFields]="['properties']" [contentActions]="true" (nodeSelected)="onNodeSelected($event)"
+                        (preview)="onPreview($event)" class="p-0">
+                        <data-columns>
+                            <data-column key="$thumbnail" type="image"></data-column>
+                            <data-column title="Name" key="name" sortingKey="name"
+                                class="adf-ellipsis-cell adf-expand-cell-3"></data-column>
+                            <data-column title="Lock" key="#" sortingKey="#" class="adf-ellipsis-cell">
+                                <ng-template let-context="$implicit">
+                                    <mat-icon *ngIf="context.row.getValue('properties.cm:lockOwner')"
+                                        [title]="'Locked By ' + context.row.getValue('properties.cm:lockOwner.displayName')">
+                                        lock</mat-icon>
+                                </ng-template>
+                            </data-column>
+                            <data-column title="Modified On" key="modifiedAt" sortingKey="modifiedAt"
+                                class="adf-ellipsis-cell adf-expand-cell-1" type="date" format="mediumDate">
+                            </data-column>
+                            <data-column title="Modified By" key="modifiedByUser.displayName" [sortable]="false"
+                                class="adf-ellipsis-cell" sortable="true"></data-column>
+                            <data-column title="Version" key="properties.cm:versionLabel" [sortable]="false"
+                                class="adf-ellipsis-cell"></data-column>
+                            <data-column title="Checked Out By" key="properties.cm:lockOwner.displayName" sortingKey="#"
+                                class="adf-ellipsis-cell">
+                            </data-column>
+                        </data-columns>
+                        <content-actions>
+                            <content-action target="document" icon="file_upload" title="Upload the new version"
+                                [visible]="isFileUnlocked" (execute)="onUploadNewVersion($event)">
+                            </content-action>
+                            <content-action icon="history" title="Version history" (execute)="onVersionHistory($event)">
+                            </content-action>
+                            <content-action icon="library_books" title="Add properties" [visible]="isFileUnlocked"
+                                (execute)="onAddProperties($event)">
+                            </content-action>
+                        </content-actions>
+                    </adf-document-list>
+                    <adf-pagination [target]="documentList" [supportedPageSizes]="[5, 10, 15, 20]" [pagination]="10">
+                    </adf-pagination>
+                </div>
+            </div>
+        </div>
+
+        <div id="workflow" class="card m-3" *ngIf="completedTasks.length > 0">
+            <div class="card-body">
+                <div class="row m-3">
+                    <div>
+                        <h4 class="d-md-inline-block font-weight-bold mt-1">Workflow Details:</h4>
+                    </div>
+                    <mat-divider class="mt-2"></mat-divider>
+                </div>
+                <div class="row m-3">
+                    <div *ngIf="isLoadingCompletedTasks" class="text-md-center">
+                        <div class="spinner-grow text-primary m-3"></div>
+                        <div class="spinner-grow text-success m-3"></div>
+                        <div class="spinner-grow text-info m-3"></div>
+                    </div>
+                    <div *ngIf="!isLoadingCompletedTasks">
+                        <div *ngFor="let task of completedTasks.slice().reverse(); let tIndex = index" class="row m-1">
+                            <mat-expansion-panel hideToggle class="p-0">
+                                <mat-expansion-panel-header>
+                                    <mat-panel-title>
+                                        <b class="me-2">{{ task.name }}:</b> {{completedTasksDetails[completedTasks.length - tIndex - 1].status}} by <b class="mx-1">{{task.getFullName()}}</b> on <b class="ms-1">{{task.endDate | date:'MM/dd/yyyy h:mm a'}}</b>
+                                    </mat-panel-title>
+                                </mat-expansion-panel-header>
+                                <p>
+                                    {{completedTasksDetails[completedTasks.length - tIndex - 1].comment ? completedTasksDetails[completedTasks.length - tIndex - 1].comment : 'No Comment'}}
+                                </p>
+                            </mat-expansion-panel>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="comment" class="card m-3" *ngIf="selectedNodeId">
+            <div class="card-body">
+                <div class="row m-3">
+                    <div>
+                        <h4 class="d-md-inline-block font-weight-bold mt-1">Comments:</h4>
+                        <button mat-raised-button color="accent" class="float-end" (click)="onAddComment()">
+                            <mat-icon>add</mat-icon>
+                            <span>Add</span>
+                        </button>
+                    </div>
+                    <mat-divider class="mt-2"></mat-divider>
+                </div>
+                <div class="row m-3">
+                    <adf-comment-list [comments]="comments" *ngIf="!isLoadingComments;else loading_content">
+                    </adf-comment-list>
+                    <adf-empty-content *ngIf="!isLoadingComments && comments.length == 0" class="m-3" icon="star_rate"
+                        title="No Comments">
+                    </adf-empty-content>
+                    <ng-template #loading_content>
+                        <div class="text-md-center">
+                            <div class="spinner-grow text-primary m-3"></div>
+                            <div class="spinner-grow text-success m-3"></div>
+                            <div class="spinner-grow text-info m-3"></div>
+                        </div>
+                    </ng-template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12 text-md-center">
+        <button *ngIf="contract.createdByUser.id == currentUser && contract.properties['cw:status'] == STATUS_NEW"
+            mat-raised-button color="accent" class="m-3" (click)="onSubmit2Workflow()">
+            <mat-icon>send</mat-icon>
+            <span> Submit to Workflow</span>
+        </button>
+
+        <div *ngIf="currentTask" class="m-3">
+            <button *ngIf="isEnableForActions() && !currentTask.assignee" adf-claim-task mat-raised-button
+                color="accent" [taskId]="currentTask.id" (success)="onClaimedSuccess()">
+                <mat-icon>assignment_ind</mat-icon>
+                <span> Claim</span>
+            </button>
+
+            <button *ngIf="currentTask.assignee && currentTask.assignee.email == currentUser" adf-unclaim-task
+                mat-raised-button color="accent" [taskId]="currentTask.id" (success)="onUnclaimedSuccess()">
+                <mat-icon>assignment_ind</mat-icon>
+                <span> Unclaim</span>
+            </button>
+
+            <button *ngIf="currentTask.assignee && currentTask.assignee.email == currentUser" mat-raised-button
+                color="accent" class="m-3" (click)="onActions()">
+                <mat-icon>assignment_turned_in</mat-icon>
+                <span> Approve / Reject</span>
+            </button>
+        </div>
+
+        <!-- <button mat-raised-button color="accent" class="m-3">
+            <mat-icon>cancel_presentation</mat-icon>
+            <span> Cancel</span>
+        </button> -->
+    </div>
+</div>
+
+<ng-template #loadingDiv>
+    <div class="d-md-flex text-md-center align-items-md-center h-100">
+        <div class="col-md-12">
+            <div class="spinner-grow text-primary m-3"></div>
+            <div class="spinner-grow text-success m-3"></div>
+            <div class="spinner-grow text-info m-3"></div>
+        </div>
+    </div>
+</ng-template>
+
+<adf-file-uploading-dialog></adf-file-uploading-dialog>

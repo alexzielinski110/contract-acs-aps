@@ -1,0 +1,22 @@
+adf-sidenav-layout {
+    height: 100%;
+}
+
+adf-userinfo {
+    position: fixed;
+    right: 0;
+}
+
+img.adf-app-logo {
+    margin-left: 17px !important;
+    height: 67px !important;
+    transition: margin-left 0.15s ease-in-out;
+}
+
+adf-layout-header.non-toggled img.adf-app-logo {
+    margin-left: 147px !important;
+}
+
+adf-layout-header.toggled img.adf-app-logo {
+    margin-left: 17px !important;
+}

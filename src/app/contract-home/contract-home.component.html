@@ -1,0 +1,95 @@
+<adf-toolbar>
+    <adf-toolbar-title>
+        <adf-breadcrumb class="files-breadcrumb" root="Contract Home">
+        </adf-breadcrumb>
+    </adf-toolbar-title>
+
+    <div class="adf-toolbar--spacer"></div>
+
+    <button mat-raised-button color="accent" class="float-end" (click)="onNewContract()">
+        <mat-icon>add</mat-icon>
+        <span> New</span>
+    </button>
+</adf-toolbar>
+
+<div class="row m-3">
+    <div class="col-md-6 mb-3">
+        <mat-card class="card">
+            <mat-card-title>
+                <h4>My Pending Approvals</h4>
+                <hr class="mb-0" />
+            </mat-card-title>
+            <mat-card-content>
+                <div *ngIf="isLoadingApproval" class="text-md-center">
+                    <!--Add your custom loading template here-->
+                    <div class="spinner-grow text-primary m-3"></div>
+                    <div class="spinner-grow text-success m-3"></div>
+                    <div class="spinner-grow text-info m-3"></div>
+                </div>
+                <mat-list *ngIf="approvals.length>0">
+                    <mat-list-item *ngFor="let approval of approvals">
+                        <mat-icon matListIcon>folder</mat-icon>
+                        <a href="contract/{{approval.id}}/detail" class="overflow-hidden" [title]="approval.name">
+                            <h4 class="overflow-hidden text-nowrap"> {{approval.name}} </h4>
+                        </a>
+                    </mat-list-item>
+                </mat-list>
+                <adf-empty-content *ngIf="!isLoadingApproval && approvals.length == 0" class="m-3" icon="star_rate"
+                    title="No Approvals">
+                </adf-empty-content>
+            </mat-card-content>
+        </mat-card>
+    </div>
+    <div class="col-md-6">
+        <!-- <mat-card class="card">
+            <mat-card-title>
+                <h4>Contracts - Recently Viewed</h4>
+                <hr class="mb-0" />
+            </mat-card-title>
+            <mat-card-content>
+                <mat-list>
+                    <mat-list-item *ngFor="let recent of recents">
+                        <mat-icon matListIcon>folder</mat-icon>
+                        <a href="#" class="overflow-hidden" [title]="recent.name">
+                            <h4 class="overflow-hidden text-nowrap"> {{recent.name}} </h4>
+                        </a>
+                    </mat-list-item>
+                </mat-list>
+            </mat-card-content>
+        </mat-card> -->
+    </div>
+</div>
+
+<div class="row m-3">
+    <div class="col-md-12">
+        <mat-card class="card mb-3">
+            <mat-card-title>
+                <h4>All Contracts</h4>
+            </mat-card-title>
+            <mat-card-content>
+                <adf-document-list #documentList [currentFolderId]="contractFolderId" [loading]="true"
+                    [navigate]="false" [contentActions]="true" class="p-0">
+                    <data-columns>
+                        <data-column key="$thumbnail" type="image"></data-column>
+                        <data-column title="Name" key="name" sortingKey="name"
+                            class="adf-ellipsis-cell adf-expand-cell-2"></data-column>
+                        <data-column title="Status" key="properties.cw:status" [sortable]="false"
+                            class="adf-ellipsis-cell">
+                        </data-column>
+                        <data-column title="Created By" key="createdByUser.displayName" [sortable]="false"
+                            class="adf-ellipsis-cell"></data-column>
+                        <data-column title="Last Mod By" key="modifiedByUser.displayName" [sortable]="false"
+                            class="adf-ellipsis-cell"></data-column>
+                        <data-column title="Last Mod On" key="modifiedAt" sortingKey="modifiedAt" type="date"
+                            format="mediumDate" class="adf-ellipsis-cell adf-expand-cell-2"></data-column>
+                    </data-columns>
+                    <content-actions>
+                        <content-action title="In Detail" (execute)="onShowDetail($event)"></content-action>
+                    </content-actions>
+                </adf-document-list>
+                <adf-pagination [target]="documentList" [supportedPageSizes]="[5, 10, 15, 20]" [pagination]="10">
+                </adf-pagination>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>

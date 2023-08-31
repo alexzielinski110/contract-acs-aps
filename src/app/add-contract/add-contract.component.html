@@ -1,0 +1,24 @@
+<div class="form-container">
+    <adf-form [form]="contractFrom" [disableSaveButton]="isDisableSave" [showRefreshButton]="false"
+        [showCompleteButton]="false" (executeOutcome)="onContractSaved($event)">
+        <adf-form-custom-outcomes class="float-end">
+            <adf-upload-button *ngIf="!isHiddenUpload" nodeType="cw:invoice" staticTitle="Upload" [rootFolderId]="contractNodeId"
+                [multipleFiles]="true" [versioning]="true" acceptedFilesType=".pdf" (success)="onUploadSuccess($event)"></adf-upload-button>
+            <adf-file-uploading-dialog #fileUploadingDialog></adf-file-uploading-dialog>
+
+            <button mat-button (click)="this.dialogRef.close(this.contractNode)">Close</button>
+        </adf-form-custom-outcomes>
+    </adf-form>
+</div>
+
+<div *ngIf="isAnalyzing" class="loader-container" style="position: absolute; top: 0; left: 0; width: 100%; z-index: 1050;">
+    <div class="loader-spinner">
+        <svg class="circular">
+            <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="5" stroke-miterlimit="10">
+            </circle>
+        </svg>
+    </div>
+    <div class="loader-item">
+        <div class="loader-text" style="font-weight: bolder; background: lightgreen; padding: 5px 20px;">Analyzing...</div>
+    </div>
+</div>
